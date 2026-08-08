@@ -106,6 +106,7 @@ async def api_handler(
                     """UPDATE tv_list set content=?, name=?, uptime=? WHERE yys=? AND name=?""",
                     (data, newName, uptime, yys, oldName)
                 )
+                conn.commit()
                 print(f"执行SQL:update{oldName}----{newName}")
                 msg = "修改数据成功"
             else:
