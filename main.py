@@ -73,9 +73,17 @@ async def drop_table():
 
 @app.post("/api")
 async def api_handler(
-    action: str = Query(...),
-    body: dict = Body(...)
+    request: Request,
+    action: str = Query(...)
 ):
+    content_type = request.headers.get("content-type","")
+    body = {}
+    if "application/json" in content_type:
+        body = await request.json()
+    elif "x-www-form-urlencoded" in content_type:
+        form = await request.form()
+        body = dict(form)
+    # body 统一为字典，后续逻辑完全不变
     try:
         yys = body.get("yys")
         uptime = int(time.time())
