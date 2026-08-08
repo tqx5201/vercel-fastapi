@@ -26,8 +26,12 @@ def get_data():
     return {"data": rows, "count": len(rows)}
 
 
-@app.get("/api/list/{id}")
+@app.get("/list/{id}")
 def get_one(id: str):
+    if not id.endswith(".txt"):
+        return JSONResponse(status_code=400, content={"error": "只提供txt格式数据"})
+
+    id = id[:-4]
     conn = get_turso_conn()
     try:
         sql = "SELECT content FROM tv_list WHERE yys = 'txt' and name = ?"
