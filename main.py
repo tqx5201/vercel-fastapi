@@ -226,8 +226,8 @@ def get_region():
 
 
 
-	
-app.mount("/", StaticFiles(directory="public", html=True), name="static")
+#vercel上不用挂	
+#app.mount("/", StaticFiles(directory="public", html=True), name="static")
 
 if __name__ == "__main__":
      import uvicorn
