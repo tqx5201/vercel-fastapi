@@ -137,7 +137,7 @@ async def api_handler(
             rows = conn.execute("SELECT name, content FROM tv_list WHERE yys=?", (yys,)).fetchall()
             for r in rows:
                 name = r[0]
-                content = r[0]
+                content = r[1]
                 lines.append(name[2:] + ",#genre#")
                 lines.append(mergeLiveSourceList(content))
             txt = "\n".join(lines)
