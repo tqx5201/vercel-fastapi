@@ -19,6 +19,7 @@ def get_turso_conn():
 def get_data():
     conn = get_turso_conn()
     sql = "SELECT * FROM tv_list"
+    print("[EXEC SQL]", sql)
     rows = conn.execute(sql).fetchall()
     return {"data": rows, "count": len(rows)}
 
@@ -27,7 +28,9 @@ def get_data():
 def get_one(id: int):
     conn = get_turso_conn()
     sql = "SELECT * FROM tv_list WHERE id = ?"
-    row = conn.execute(sql, (id,)).fetchone()
+    params = (id,)
+    print("[EXEC SQL]", sql, "PARAMS:", params)
+    row = conn.execute(sql, params).fetchone()
     if row is None:
         return JSONResponse(status_code=404, content={"error": "not found"})
     return {"data": row}
@@ -50,6 +53,7 @@ async def create_table():
             UNIQUE(yys, name)
         )
     """
+    print("[EXEC SQL CREATE TABLE]", sql)
     conn.execute(sql)
     return {"code": 200, "msg": "创建数据表成功"}
 
@@ -58,6 +62,7 @@ async def create_table():
 async def drop_table():
     conn = get_turso_conn()
     sql = "DROP TABLE IF EXISTS tv_list"
+    print("[EXEC SQL DROP TABLE]", sql)
     conn.execute(sql)
     return {"code": 200, "msg": "删除数据表成功"}
 
@@ -80,6 +85,9 @@ async def api_handler(
     except Exception:
         pass
 
+    print("[REQUEST BODY]", body)
+    print("[ACTION]", action)
+
     try:
         yys = body.get("yys")
         uptime = int(time.time())
@@ -97,51 +105,64 @@ async def api_handler(
 
             msg = "添加数据成功"
             if oldName and oldName != newName:
-                conn.execute(
-                    """UPDATE tv_list set content=?, name=?, uptime=? WHERE yys=? AND name=?""",
-                    (data, newName, uptime, yys, oldName)
-                )
+                sql = """UPDATE tv_list set content=?, name=?, uptime=? WHERE yys=? AND name=?"""
+                params = (data, newName, uptime, yys, oldName)
+                print("[EXEC UPDATE SQL]", sql, "PARAMS:", params)
+                conn.execute(sql, params)
                 msg = "修改数据成功"
             else:
-                conn.execute("""
+                sql = """
                     INSERT INTO tv_list(yys, name, content, uptime)
                     VALUES (?, ?, ?, ?)
                     ON CONFLICT(yys, name) DO UPDATE SET
                         content = excluded.content,
                         uptime = excluded.uptime;
-                """, (yys, newName, data, uptime))
+                """
+                params = (yys, newName, data, uptime)
+                print("[EXEC UPSERT SQL]", sql, "PARAMS:", params)
+                conn.execute(sql, params)
             return {"code": 200, "msg": msg}
 
         elif action == "categorys":
-            rows = conn.execute("SELECT name FROM tv_list WHERE yys=?", (yys,)).fetchall()
+            sql = "SELECT name FROM tv_list WHERE yys=?"
+            params = (yys,)
+            print("[EXEC SQL]", sql, "PARAMS:", params)
+            rows = conn.execute(sql, params).fetchall()
             return {"code": 200, "msg": "获取成功", "data": rows, "count": len(rows)}
 
         elif action == "merge_list":
             lines: List[str] = []
-            rows = conn.execute("SELECT name, content FROM tv_list WHERE yys=?", (yys,)).fetchall()
+            sql_query = "SELECT name, content FROM tv_list WHERE yys=?"
+            params_q = (yys,)
+            print("[EXEC QUERY SQL]", sql_query, "PARAMS:", params_q)
+            rows = conn.execute(sql_query, params_q).fetchall()
             for r in rows:
                 keyName = r["name"]
                 val = r["content"]
                 lines.append(keyName[2:] + ",#genre#")
                 lines.append(mergeLiveSourceList(val))
             txt = "\n".join(lines)
-            conn.execute("""
+
+            sql_insert = """
                 INSERT INTO tv_list(yys, name, content, uptime)
                 VALUES (?, ?, ?, ?)
                 ON CONFLICT(yys,name) DO UPDATE SET
                     content=excluded.content,
                     uptime=excluded.uptime
-            """, ("txt", yys, txt, uptime))
+            """
+            params_ins = ("txt", yys, txt, uptime)
+            print("[EXEC MERGE INSERT SQL]", sql_insert, "PARAMS:", params_ins)
+            conn.execute(sql_insert, params_ins)
             return {"code": 200, "msg": "合并成功", "data": txt}
 
         elif action == "read":
             file_key = body.get("file")
             if not file_key:
                 raise HTTPException(status_code=400, detail="参数缺失：file")
-            row = conn.execute(
-                "SELECT content FROM tv_list WHERE yys=? AND name=?",
-                (yys, file_key)
-            ).fetchone()
+            sql = "SELECT content FROM tv_list WHERE yys=? AND name=?"
+            params = (yys, file_key)
+            print("[EXEC READ SQL]", sql, "PARAMS:", params)
+            row = conn.execute(sql, params).fetchone()
             val = row["content"] if row else None
             return {"code": 200, "msg": "读取成功", "data": val}
 
@@ -149,10 +170,10 @@ async def api_handler(
             file_key = body.get("file")
             if not file_key:
                 raise HTTPException(status_code=400, detail="参数缺失：file")
-            conn.execute(
-                "DELETE FROM tv_list WHERE yys=? AND name=?",
-                (yys, file_key)
-            )
+            sql = "DELETE FROM tv_list WHERE yys=? AND name=?"
+            params = (yys, file_key)
+            print("[EXEC DELETE SQL]", sql, "PARAMS:", params)
+            conn.execute(sql, params)
             return {"code": 200, "msg": "删除成功"}
 
         else:
@@ -161,7 +182,7 @@ async def api_handler(
     except HTTPException:
         raise
     except Exception as e:
-        print("[API ERROR]", repr(e))
+        print("[API ERROR FULL]", repr(e))
         raise HTTPException(status_code=500, detail=f"操作失败:{str(e)}")
 
 
