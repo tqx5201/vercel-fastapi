@@ -3,17 +3,19 @@ from fastapi.responses import JSONResponse
 import turso_serverless
 import os
 import time
-from fastapi import Request, Query, Body, HTTPException
+from fastapi import FastAPI, Query, Body, HTTPException
 from pydantic import BaseModel
+import sqlite3
 from typing import Optional, List
 
-#静态文件，vercel会将PUBLIC文件夹自动处置
-#from fastapi.staticfiles import StaticFiles
+from fastapi.staticfiles import StaticFiles
+from fastapi import FastAPI, Request
 
-
-#from dotenv import load_dotenv
 # 必须在 getenv 前面！
-#load_dotenv()  
+#from dotenv import load_dotenv
+load_dotenv()  
+
+
 
 os.system("clear")
 
@@ -68,11 +70,11 @@ def mergeLiveSourceList(raw_val: str) -> str:
 async def create_table():
     sql ="""
         CREATE TABLE IF NOT EXISTS tv_list (
-            id INTEGER PRIMARY KEY AUTOINCREMENT
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
             yys TEXT NOT NULL,
             name TEXT NOT NULL,
             content TEXT NOT NULL,
-            update INTEGER NOT NULL,
+            uptime INTEGER NOT NULL,
             UNIQUE(yys, name)
         )
     """
@@ -95,7 +97,7 @@ async def api_handler(
 ):
     try:
         yys = body.get("yys")
-        update = time.time()
+        uptime = time.time()
         if not action or not yys:
             raise HTTPException(status_code=400, detail={"code":400, "msg":"参数缺失"})
 
@@ -109,14 +111,14 @@ async def api_handler(
             msg = "添加数据成功"
 
             if oldName and oldName != newName:
-                conn.execute("UPDATE list_tv set content=?,name=?,update=? WHERE yys=? AND name=?", (data,newName,yys,oldName,update))
+                conn.execute("UPDATE list_tv set content=?,name=?,uptime=? WHERE yys=? AND name=?", (data,newName,yys,oldName,uptime))
                 msg = "修改数据成功"
             # upsert 写入新数据
             else:
                 conn.execute("""
-                    INSERT INTO tv_list(yys, name, content, update)
+                    INSERT INTO tv_list(yys, name, content, uptime)
                     VALUES (?, ?, ?, ?)
-                """, (yys, newName, data, update))
+                """, (yys, newName, data, uptime))
             return {"code":200, "msg":msg}
 
         elif action == "categorys":
@@ -226,7 +228,7 @@ def get_region():
 
 
 
-#vercel上不用挂	
+	
 #app.mount("/", StaticFiles(directory="public", html=True), name="static")
 
 if __name__ == "__main__":
