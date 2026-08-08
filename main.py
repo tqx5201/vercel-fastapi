@@ -6,6 +6,9 @@ import time
 from urllib.parse import parse_qs
 from typing import Optional, List
 
+from mergeLiveSourceList import mergeLiveSourceList
+
+
 app = FastAPI(title="Vercel + FastAPI")
 
 
@@ -32,9 +35,6 @@ def get_one(id: int):
         return JSONResponse(status_code=404, content={"error": "not found"})
     return {"data": row}
 
-
-def mergeLiveSourceList(raw_val: str) -> str:
-    return raw_val
 
 
 @app.get("/api/create_table")
@@ -141,17 +141,15 @@ async def api_handler(
                     content=excluded.content,
                     uptime=excluded.uptime
             """, ("txt", yys, txt, uptime))
+            conn.commit()
             return {"code": 200, "msg": "合并成功", "data": txt}
 
         elif action == "read":
             file_key = body.get("file")
             if not file_key:
                 raise HTTPException(status_code=400, detail="参数缺失：file")
-            row = conn.execute(
-                "SELECT content FROM tv_list WHERE yys=? AND name=?",
-                (yys, file_key)
-            ).fetchone()
-            val = row["content"] if row else None
+            row = conn.execute("SELECT content FROM tv_list WHERE yys=? AND name=?",(yys, file_key)).fetchone()
+            val = row[0] if row else None
             return {"code": 200, "msg": "读取成功", "data": val}
 
         elif action == "del":
