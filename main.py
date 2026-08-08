@@ -26,14 +26,14 @@ def get_data():
     return {"data": rows, "count": len(rows)}
 
 
-@app.get("/api/sqlite/{id}")
-def get_one(id: int):
+@app.get("/api/list/{id}")
+def get_one(id: str):
     conn = get_turso_conn()
-    sql = "SELECT * FROM tv_list WHERE id = ?"
+    sql = "SELECT content FROM tv_list WHERE yys = 'txt and name =?"
     row = conn.execute(sql, (id,)).fetchone()
     if row is None:
         return JSONResponse(status_code=404, content={"error": "not found"})
-    return {"data": row}
+    return row[0]
 
 
 
