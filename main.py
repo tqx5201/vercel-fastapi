@@ -36,11 +36,7 @@ def get_one(id: str):
         if not row:
             return JSONResponse(status_code=404, content={"error": "not found"})
 
-        return Response(
-            content=row[0],
-            media_type="text/plain",
-            charset="utf-8"
-        )
+        return Response(content=row[0],headers={"Content-Type": "text/plain; charset=utf-8"})
     finally:
         conn.close()
 
