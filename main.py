@@ -105,7 +105,7 @@ async def api_handler(
             else:
                 sql = """
                     INSERT INTO tv_list(yys, name, content, uptime)
-                    VALUES ($1, $2, $3, $4)
+                    VALUES (?, ?, ?, ?)
                     ON CONFLICT(yys, name) DO UPDATE SET
                     content = excluded.content,
                     uptime = excluded.uptime
@@ -114,13 +114,13 @@ async def api_handler(
                 print("执行SQL:", sql)
                 print("绑定参数:", params)
                 result = conn.execute(sql, params)
-                #conn.commit()
+                conn.commit()
                 print("本次影响行数:", result.rowcount)
                 
             return {"code": 200, "msg": msg}
 
         elif action == "categorys":
-            rows = conn.execute("SELECT name FROM tv_list WHERE yys=?", (yys,)).fetchall()
+            rows = conn.execute("SELECT id,yys,name FROM tv_list WHERE yys=?", (yys,)).fetchall()
             return {"code": 200, "msg": "获取成功", "data": rows, "count": len(rows)}
 
         elif action == "merge_list":
