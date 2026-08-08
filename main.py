@@ -129,10 +129,10 @@ async def api_handler(
             lines: List[str] = []
             rows = conn.execute("SELECT name, content FROM tv_list WHERE yys=?", (yys,)).fetchall()
             for r in rows:
-                keyName = r["name"]
-                val = r["content"]
-                lines.append(keyName[2:] + ",#genre#")
-                lines.append(mergeLiveSourceList(val))
+                name = r[0]
+                content = r[0]
+                lines.append(name[2:] + ",#genre#")
+                lines.append(mergeLiveSourceList(content))
             txt = "\n".join(lines)
             conn.execute("""
                 INSERT INTO tv_list(yys, name, content, uptime)
