@@ -1,19 +1,18 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Query, Body, HTTPException
+#from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
 import turso_serverless
 import os
 import time
-from fastapi import FastAPI, Query, Body, HTTPException
+
 from pydantic import BaseModel
 import sqlite3
 from typing import Optional, List
 
-from fastapi.staticfiles import StaticFiles
-from fastapi import FastAPI, Request
 
-# 必须在 getenv 前面！
+# 本地获取ENV,必须在 getenv 前面！,vercel不用
 #from dotenv import load_dotenv
-load_dotenv()  
+#load_dotenv()  
 
 
 
