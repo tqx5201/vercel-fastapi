@@ -117,6 +117,9 @@ async def api_handler(
                 conn.execute("""
                     INSERT INTO tv_list(yys, name, content, uptime)
                     VALUES (?, ?, ?, ?)
+                    ON CONFLICT(yys, name) DO UPDATE SET
+                        content = excluded.content,
+                        uptime = excluded.uptime;
                 """, (yys, newName, data, uptime))
             return {"code":200, "msg":msg}
 
