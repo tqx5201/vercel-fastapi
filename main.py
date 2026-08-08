@@ -114,6 +114,7 @@ async def api_handler(
                 print("执行SQL:", sql)
                 print("绑定参数:", params)
                 result = conn.execute(sql, params)
+                conn.commit()
                 print("本次影响行数:", result.rowcount)
                 
             return {"code": 200, "msg": msg}
