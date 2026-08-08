@@ -29,7 +29,7 @@ def get_data():
 @app.get("/api/list/{id}")
 def get_one(id: str):
     conn = get_turso_conn()
-    sql = "SELECT content FROM tv_list WHERE yys = 'txt and name =?"
+    sql = "SELECT content FROM tv_list WHERE yys = 'txt' and name =?"
     row = conn.execute(sql, (id,)).fetchone()
     if row is None:
         return JSONResponse(status_code=404, content={"error": "not found"})
