@@ -120,7 +120,9 @@ async def api_handler(
             return {"code": 200, "msg": msg}
 
         elif action == "categorys":
-            rows = conn.execute("SELECT id,yys,name FROM tv_list WHERE yys=?", (yys,)).fetchall()
+            cursor = conn.execute("SELECT id,yys,name FROM tv_list WHERE yys=?", (yys,))
+            cols = [c[0] for c in cursor.description]
+            rows = [dict(zip(cols, r)) for r in cursor.fetchall()]
             return {"code": 200, "msg": "获取成功", "data": rows, "count": len(rows)}
 
         elif action == "merge_list":
