@@ -110,7 +110,7 @@ async def api_handler(
                     content = excluded.content,
                     uptime = excluded.uptime
                 """
-                params = (yys, newName, data, uptime)
+                params = (yys, newName, data, uptime,)
                 print("执行SQL:", sql)
                 print("绑定参数:", params)
                 result = conn.execute(sql, params)
