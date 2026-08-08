@@ -5,6 +5,9 @@ import os
 import time
 from pydantic import BaseModel
 from typing import Optional, List
+from urllib.parse import parse_qs
+
+
 
 #from dotenv import load_dotenv
 #load_dotenv()
@@ -71,19 +74,28 @@ async def drop_table():
     return {"code":200, "msg":"删除数据表成功"}
 
 
+
+
 @app.post("/api")
 async def api_handler(
     request: Request,
     action: str = Query(...)
 ):
-    content_type = request.headers.get("content-type","")
+    content_type = request.headers.get("content-type", "")
     body = {}
-    if "application/json" in content_type:
-        body = await request.json()
-    elif "x-www-form-urlencoded" in content_type:
-        form = await request.form()
-        body = dict(form)
-    # body 统一为字典，后续逻辑完全不变
+    try:
+        raw_bytes = await request.body()
+        if "application/json" in content_type:
+            body = await request.json()
+        elif "x-www-form-urlencoded" in content_type:
+            # 手动解析，不需要python‑multipart
+            raw_str = raw_bytes.decode("utf-8")
+            parsed = parse_qs(raw_str)
+            # parse_qs值是列表，取第一个
+            body = {k: v[0] for k, v in parsed.items()}
+    except Exception:
+        pass
+    
     try:
         yys = body.get("yys")
         uptime = int(time.time())
