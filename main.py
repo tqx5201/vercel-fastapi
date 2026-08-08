@@ -3,35 +3,21 @@ from fastapi.responses import JSONResponse
 import turso_serverless
 import os
 import time
-from pydantic import BaseModel
-from typing import Optional, List
 from urllib.parse import parse_qs
-
-
-
-#from dotenv import load_dotenv
-#load_dotenv()
-
-os.system("clear")
+from typing import Optional, List
 
 app = FastAPI(title="Vercel + FastAPI")
 
-conn = None
 
-@app.on_event("startup")
-async def init_db():
-    global conn
-    env_url = os.getenv("TURSO_DATABASE_URL")
-    env_token = os.getenv("TURSO_AUTH_TOKEN")
-    print("TURSO_URL:", env_url)
-    conn = turso_serverless.connect(
-        url=str(env_url),
-        auth_token=str(env_token)
-    )
+def get_turso_conn():
+    url = os.getenv("TURSO_DATABASE_URL")
+    token = os.getenv("TURSO_AUTH_TOKEN")
+    return turso_serverless.connect(url=str(url), auth_token=str(token))
 
 
 @app.get("/api/sqlite")
 def get_data():
+    conn = get_turso_conn()
     sql = "SELECT * FROM tv_list"
     rows = conn.execute(sql).fetchall()
     return {"data": rows, "count": len(rows)}
@@ -39,6 +25,7 @@ def get_data():
 
 @app.get("/api/sqlite/{id}")
 def get_one(id: int):
+    conn = get_turso_conn()
     sql = "SELECT * FROM tv_list WHERE id = ?"
     row = conn.execute(sql, (id,)).fetchone()
     if row is None:
@@ -47,12 +34,12 @@ def get_one(id: int):
 
 
 def mergeLiveSourceList(raw_val: str) -> str:
-    # 替换为你的合并逻辑
     return raw_val
 
 
 @app.get("/api/create_table")
 async def create_table():
+    conn = get_turso_conn()
     sql = """
         CREATE TABLE IF NOT EXISTS tv_list (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -64,16 +51,15 @@ async def create_table():
         )
     """
     conn.execute(sql)
-    return {"code":200, "msg":"创建数据表成功"}
+    return {"code": 200, "msg": "创建数据表成功"}
 
 
 @app.get("/api/drop_table")
 async def drop_table():
+    conn = get_turso_conn()
     sql = "DROP TABLE IF EXISTS tv_list"
     conn.execute(sql)
-    return {"code":200, "msg":"删除数据表成功"}
-
-
+    return {"code": 200, "msg": "删除数据表成功"}
 
 
 @app.post("/api")
@@ -88,19 +74,19 @@ async def api_handler(
         if "application/json" in content_type:
             body = await request.json()
         elif "x-www-form-urlencoded" in content_type:
-            # 手动解析，不需要python‑multipart
             raw_str = raw_bytes.decode("utf-8")
             parsed = parse_qs(raw_str)
-            # parse_qs值是列表，取第一个
             body = {k: v[0] for k, v in parsed.items()}
     except Exception:
         pass
-    
+
     try:
         yys = body.get("yys")
         uptime = int(time.time())
         if not action or not yys:
             raise HTTPException(status_code=400, detail="参数缺失")
+
+        conn = get_turso_conn()
 
         if action == "save":
             oldName = body.get("old_name")
@@ -111,7 +97,6 @@ async def api_handler(
 
             msg = "添加数据成功"
             if oldName and oldName != newName:
-                # 修复：表名 tv_list
                 conn.execute(
                     """UPDATE tv_list set content=?, name=?, uptime=? WHERE yys=? AND name=?""",
                     (data, newName, uptime, yys, oldName)
@@ -125,11 +110,11 @@ async def api_handler(
                         content = excluded.content,
                         uptime = excluded.uptime;
                 """, (yys, newName, data, uptime))
-            return {"code":200, "msg":msg}
+            return {"code": 200, "msg": msg}
 
         elif action == "categorys":
             rows = conn.execute("SELECT name FROM tv_list WHERE yys=?", (yys,)).fetchall()
-            return {"code":200, "msg":"获取成功", "data": rows, "count": len(rows)}
+            return {"code": 200, "msg": "获取成功", "data": rows, "count": len(rows)}
 
         elif action == "merge_list":
             lines: List[str] = []
@@ -140,7 +125,6 @@ async def api_handler(
                 lines.append(keyName[2:] + ",#genre#")
                 lines.append(mergeLiveSourceList(val))
             txt = "\n".join(lines)
-            # 写入合并后的文本，yys="txt", name=yys
             conn.execute("""
                 INSERT INTO tv_list(yys, name, content, uptime)
                 VALUES (?, ?, ?, ?)
@@ -148,7 +132,7 @@ async def api_handler(
                     content=excluded.content,
                     uptime=excluded.uptime
             """, ("txt", yys, txt, uptime))
-            return {"code":200, "msg":"合并成功", "data":txt}
+            return {"code": 200, "msg": "合并成功", "data": txt}
 
         elif action == "read":
             file_key = body.get("file")
@@ -159,7 +143,7 @@ async def api_handler(
                 (yys, file_key)
             ).fetchone()
             val = row["content"] if row else None
-            return {"code":200, "msg":"读取成功", "data":val}
+            return {"code": 200, "msg": "读取成功", "data": val}
 
         elif action == "del":
             file_key = body.get("file")
@@ -169,7 +153,7 @@ async def api_handler(
                 "DELETE FROM tv_list WHERE yys=? AND name=?",
                 (yys, file_key)
             )
-            return {"code":200, "msg":"删除成功"}
+            return {"code": 200, "msg": "删除成功"}
 
         else:
             raise HTTPException(status_code=400, detail=f"未知操作: {action}")
@@ -196,7 +180,7 @@ async def demo(request: Request):
     url = str(request.url)
     path = request.url.path
     return {
-        "raw_body": raw_body.decode("utf‑8", errors="ignore"),
+        "raw_body": raw_body.decode("utf-8", errors="ignore"),
         "json_body": json_body,
         "headers": headers,
         "query_params": query_params,
