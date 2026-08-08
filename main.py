@@ -3,13 +3,13 @@ from fastapi.responses import JSONResponse
 import turso_serverless
 import os
 import time
-from fastapi import FastAPI, Query, Body, HTTPException
+from fastapi import Request, Query, Body, HTTPException
 from pydantic import BaseModel
-import sqlite3
 from typing import Optional, List
 
-from fastapi.staticfiles import StaticFiles
-from fastapi import FastAPI, Request
+#静态文件，vercel会将PUBLIC文件夹自动处置
+#from fastapi.staticfiles import StaticFiles
+
 
 #from dotenv import load_dotenv
 # 必须在 getenv 前面！
@@ -81,7 +81,7 @@ async def create_table():
 
 
 @app.get("/api/drop_table")
-async def create_table():
+async def drop_table():
     sql = "DROP TABLE IF EXISTS tv_list"
     conn.execute(sql)
     return {"code":200, "msg":"删除数据表成功"}
