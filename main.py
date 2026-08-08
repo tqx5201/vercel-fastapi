@@ -101,7 +101,7 @@ async def api_handler(
                 raise HTTPException(status_code=400, detail="new_name 不能为空")
 
             msg = "添加数据成功"
-            if oldName and oldName != newName:
+            if oldName != 'null' and oldName != newName:
                 conn.execute(
                     """UPDATE tv_list set content=?, name=?, uptime=? WHERE yys=? AND name=?""",
                     (data, newName, uptime, yys, oldName)
