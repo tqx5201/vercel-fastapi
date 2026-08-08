@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request, Query, Body, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi import Response, JSONResponse
 import turso_serverless
 import os
 import time
